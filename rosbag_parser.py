@@ -71,8 +71,12 @@ if __name__ == '__main__':
 
     parser = RosbagParser(folder_path)
 
-    topics = input("Enter the topics you want to parse (separate multiple topics with space or type all): ")
-    topics = topics.split()
+    while True:
+        topics = input("Enter the topics you want to parse (separate multiple topics with space or type all): ")
+        topics = topics.split()
+        if any(topic.startswith("/") for topic in topics):
+            break
+        print("Error: All topics must start with '/'")
 
     # Check the topics
     parser.check_topics(topics)
