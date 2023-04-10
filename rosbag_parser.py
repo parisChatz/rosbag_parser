@@ -23,7 +23,7 @@ class RosbagParser:
             print(f"{repr(e)}: The specified folder does not exist. Please check if path given is correct.")
             sys.exit(1)
 
-    def check_topics(self, topic_list):
+    def get_topics(self, topic_list):
         try:
             for file in os.listdir(self.folder_path):
                 if file.endswith(".bag"):
@@ -37,11 +37,24 @@ class RosbagParser:
                                 raise TopicNotFoundInBagError
                             self.topics_to_parse = common_topics
                         else:
-                            self.topics_to_parse = topics   
+                            self.topics_to_parse = topics
 
         except TopicNotFoundInBagError as e:
             print(f"{repr(e)}: Topics {different_topics} not found in {file}")
             sys.exit(1)
+    
+    def parse_topics(self):
+        all_topics=[]
+        for file in os.listdir(self.folder_path):
+            if file.endswith(".bag"):
+                with rosbag.Bag(os.path.join(self.folder_path, file)) as bag:
+                    topics = list(bag.get_type_and_topic_info().topics.keys())
+                    all_topics.append(topics)
+        
+        recurrent_topics = all_topics[0]
+        for topic_list in all_topics:
+            recurrent_topics = list(set(recurrent_topics).intersection(topic_list))
+        print(recurrent_topics)
 
     def parse_rosbags(self, topics=None, save_csv=True):
         topics = topics or self.topics_to_parse
@@ -61,25 +74,29 @@ class RosbagParser:
                     df.set_index('Timestamp', inplace=True)
                     df.to_csv(os.path.join(self.folder_path, f'{filename}.csv'), index=True)
 
+def main():
+    try:
+        if len(sys.argv) <= 1:
+            print("Please provide the path to the rosbag folder when running the script. \nExample: python3 rosbag_parser.py /path/to/rosbag_folder")
+            sys.exit(1)
+        folder_path = sys.argv[1]
+        parser = RosbagParser(folder_path)
+        while True:
+            topics = input("Enter the topics you want to parse (separate multiple topics with space or type all): ")
+            topics = topics.split()
+            if any(topic.startswith("/") for topic in topics) or topics[0]=="all":
+                break
+            print("Error: All topics must start with '/'")
+        # Check the topics
+        parser.get_topics(topics)
+        # Parse rosbags
+        parser.parse_rosbags()
+
+    except KeyboardInterrupt:
+        print("\nProgram interrupted by user")
 
 if __name__ == '__main__':
-
-    if len(sys.argv) <= 1:
-        print("Please provide the path to the rosbag folder when running the script. \nExample: python3 rosbag_parser.py /path/to/rosbag_folder")
-        sys.exit(1)
-    folder_path = sys.argv[1]
-
-    parser = RosbagParser(folder_path)
-
-    while True:
-        topics = input("Enter the topics you want to parse (separate multiple topics with space or type all): ")
-        topics = topics.split()
-        if any(topic.startswith("/") for topic in topics):
-            break
-        print("Error: All topics must start with '/'")
-
-    # Check the topics
-    parser.check_topics(topics)
-
-    # Parse rosbags
-    parser.parse_rosbags()
+    main()
+    # Testing comments
+    # parser = RosbagParser("/home/paris/Projects/rosbag_parser/rosbags")
+    # parser.parse_topics()
