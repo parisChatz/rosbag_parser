@@ -29,6 +29,7 @@ This script allows you to convert rosbag files to csv format with a GUI. It uses
 3. Click on "Get Topics" button to get common topics on all rosbags inside the selected folder.
 4. Click on "Convert" button to start the conversion process.
 5. Converted CSV files will be saved in the same folder where rosbag files are present with the same name as the bags.
+
 ![Screenshot](images/guipic.png)
 
 ## TODO 
