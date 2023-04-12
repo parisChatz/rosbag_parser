@@ -8,8 +8,10 @@ import logging
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-
 class TopicNotFoundInBagError(Exception):
+    pass
+
+class BagsNotFoundError(Exception):
     pass
 
 class RosbagParser:
@@ -33,8 +35,10 @@ class RosbagParser:
 
     def get_topics(self, topic_list):
         try:
+            found_bag = False
             for file in os.listdir(self.folder_path):
                 if file.endswith(".bag"):
+                    found_bag = True
                     with rosbag.Bag(os.path.join(self.folder_path, file)) as bag:
                         topics = list(bag.get_type_and_topic_info().topics.keys())
                         if topic_list[0]!="all":
@@ -46,6 +50,12 @@ class RosbagParser:
                             self.topics_to_parse = common_topics
                         else:
                             self.topics_to_parse = topics
+            if not found_bag:
+                raise BagsNotFoundError
+        
+        except BagsNotFoundError as e:
+            logging.error(f"{repr(e)}: No bags in {self.folder_path}")
+            sys.exit(1)
 
         except TopicNotFoundInBagError as e:
             logging.error(f"{repr(e)}: Topics {different_topics} not found in {file}")
