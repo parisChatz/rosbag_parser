@@ -1,9 +1,6 @@
 # Data and Datasets
 *.csv
 
-# GUI files
-guis/
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
