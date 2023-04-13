@@ -34,29 +34,54 @@ class RosbagParser:
                             level=logging.DEBUG)
 
     def get_topics(self, topic_list):
+        all_topics = self._get_all_topics()
+        
+        if topic_list[0] == "all":
+            common_topics = self._find_common_topics(all_topics)
+        else:
+            common_topics = self._find_common_topics_with_user_topic_list(all_topics, topic_list)
+
+        self.topics_to_parse = common_topics
+        return self.topics_to_parse
+
+    def _get_all_topics(self):
         try:
-            found_bag = False
-            for file in os.listdir(self.folder_path):
-                if file.endswith(".bag"):
-                    found_bag = True
-                    with rosbag.Bag(os.path.join(self.folder_path, file)) as bag:
+            found_bags = False
+            all_topics = []
+            for file in os.scandir(self.folder_path):
+                if file.name.endswith(".bag"):
+                    found_bags = True
+                    with rosbag.Bag(file.path) as bag:
                         topics = list(bag.get_type_and_topic_info().topics.keys())
-                        if topic_list[0]!="all":
-                            # If user specified which topics they want
-                            common_topics = list(set(topic_list).intersection(topics))
-                            different_topics = list(set(topic_list).difference(topics))
-                            if different_topics:
-                                raise TopicNotFoundInBagError
-                            self.topics_to_parse = common_topics
-                        else:
-                            self.topics_to_parse = topics
-            if not found_bag:
+                        all_topics.append(topics)
+            if not found_bags:
                 raise BagsNotFoundError
+            return all_topics
         
         except BagsNotFoundError as e:
             logging.error(f"{repr(e)}: No bags in {self.folder_path}")
             sys.exit(1)
 
+    def _find_common_topics(self, all_topics):
+        recurrent_topics = set(all_topics[0])
+        for topic_list in all_topics:
+            recurrent_topics.union(set(topic_list))
+        return list(recurrent_topics)
+
+    def _find_common_topics_with_user_topic_list(self, all_topics, topic_list):
+        try:
+            file = None
+            for file_obj in os.scandir(self.folder_path):
+                if file_obj.name.endswith(".bag"):
+                    with rosbag.Bag(file_obj.path) as bag:
+                        topics = list(bag.get_type_and_topic_info().topics.keys())
+                        different_topics = list(set(topic_list) - set(topics))
+                        if different_topics:
+                            raise TopicNotFoundInBagError
+                        file = file_obj.name
+            common_topics = list(set(topic_list).intersection(set(all_topics[0])))
+            return common_topics
+        
         except TopicNotFoundInBagError as e:
             logging.error(f"{repr(e)}: Topics {different_topics} not found in {file}")
             sys.exit(1)
