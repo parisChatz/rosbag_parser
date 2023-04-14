@@ -1,6 +1,7 @@
 # Data and Datasets
 *.csv
 *.glade~
+/experiments
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

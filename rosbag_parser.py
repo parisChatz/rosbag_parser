@@ -105,8 +105,6 @@ class RosbagParser:
             if file.endswith(".bag"):
                 df = pd.DataFrame(columns=topics)
                 with rosbag.Bag(os.path.join(self.folder_path, file)) as bag:
-                    # TODO Initializing the rows list with a fixed size instead 
-                    # of appending to it every iteration of the loop.
                     rows = []
                     for topic, msg, t in bag.read_messages(topics=topics):
                         row = {col_topic: None for col_topic in topics}
