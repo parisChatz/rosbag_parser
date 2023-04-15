@@ -114,7 +114,7 @@ class RosbagParser:
                     df = pd.concat([df, pd.DataFrame(rows)], ignore_index=True)
                 if save_csv:
                     filename = file.split(".")[0]
-                    df.set_index('Timestamp', inplace=True)
+                    # df.set_index('Timestamp', inplace=True)
                     df.to_csv(os.path.join(self.folder_path, f'{filename}.csv'), index=True)
 
 def main():
