@@ -35,7 +35,7 @@ class RosbagParser:
 
     def get_topics(self, topic_list):
         all_topics = self._get_all_topics()
-        
+
         if topic_list[0] == "all":
             common_topics = self._find_common_topics(all_topics)
         else:
@@ -141,6 +141,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    # # Testing comments
-    # parser = RosbagParser("/home/paris/Projects/rosbag_parser/rosbags")
-    # parser.parse_topics()
