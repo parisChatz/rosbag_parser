@@ -1,6 +1,9 @@
-# Data and Datasets
+# Data, Datasets and Misc
 *.csv
 *.glade~
+/experiments
+.vscode
+*.ipynb
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
