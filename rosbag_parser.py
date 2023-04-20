@@ -26,8 +26,21 @@ class BagsNotFoundError(Exception):
 
 
 class RosbagParser:
-    # TODO create docstrings
+    """
+    A class for parsing rosbags and saving as CSV files.
+    """
+
     def __init__(self, folder_path, topics_to_parse=[]):
+        """
+        Initializes an instance of the RosbagParser class.
+
+        Parameters:
+        folder_path (str): Path to the directory containing the rosbag files.
+        topics_to_parse (list): Optional list of topic names to parse from the rosbag files.
+
+        Returns:
+            None.
+        """
         self.setup_logging()
         try:
             if not os.path.exists(folder_path):
@@ -43,6 +56,9 @@ class RosbagParser:
             sys.exit(1)
 
     def setup_logging(self):
+        """
+        Sets up the logging for the application.
+        """
         logging.basicConfig(
             format="%(asctime)s %(levelname)-8s %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
@@ -50,6 +66,15 @@ class RosbagParser:
         )
 
     def get_topics(self, topic_list):
+        """
+        This method returns a list of topics that are common among all the rosbags in the specified folder_path.
+        If topic_list parameter is ["all"], then all the topics present in the rosbags will be returned.
+
+        Parameters:
+            topic_list (list): A list of topic names to search for, or the string "all" to search for all topics.
+        Returns:
+            Returns a list of topics that are common among all the rosbags in the specified folder_path.
+        """
         all_topics = self._get_all_topics()
 
         if topic_list[0] == "all":
@@ -57,10 +82,26 @@ class RosbagParser:
         else:
             common_topics = self._find_common_topics_with_user_topic_list(all_topics, topic_list)
 
+        # TODO order the self.topics_to_parse list (second char of string)
+        # Alphabetically order list on second char (after "/")
         self.topics_to_parse = common_topics
         return self.topics_to_parse
 
     def _get_all_topics(self):
+        """
+        Scan every .bag file in the specified folder and return a list of lists with all the topics
+        found in each rosbag file.
+
+        Args:
+            None.
+
+        Returns:
+            A list of lists. Each sub-list contains all the topics of one rosbag file in the specified folder.
+
+        Raises:
+            BagsNotFoundError: If no .bag files are found in the specified folder. The program exits with
+                a status code of 1, printing an error message to the console.
+        """
         try:
             found_bags = False
             all_topics = []
@@ -79,12 +120,38 @@ class RosbagParser:
             sys.exit(1)
 
     def _find_common_topics(self, all_topics):
+        """
+        Given a list of lists with all the topics found in each rosbag file, this method returns a list
+        with the topics that are common in all rosbag files.
+
+        Args:
+            all_topics (list): A list of lists, where each inner list contains all the topics found in one rosbag
+            file.
+
+        Returns:
+            A list with the topics that are common to all of the rosbag files.
+        """
         recurrent_topics = set(all_topics[0])
         for topic_list in all_topics:
             recurrent_topics.union(set(topic_list))
         return list(recurrent_topics)
 
     def _find_common_topics_with_user_topic_list(self, all_topics, topic_list):
+        """
+        Given a list of lists with all the topics found in each rosbag file, and a user-specified list of topics, this
+        method returns a list with the topics that are common to all rosbag files and the user-specified topic list.
+
+        Args:
+            all_topics (list): A list of lists, where each inner list contains all the topics found in one rosbag file.
+            topic_list (list): A list of topics specified by the user.
+
+        Returns:
+            A list with the topics that are common to all of the rosbag files and the user-specified topic list.
+
+        Raises:
+            TopicNotFoundInBagError: If one or more topics from the user-specified topic list are not found in a rosbag
+            file in the directory, this exception is raised.
+        """
         try:
             file = None
             for file_obj in os.scandir(self.folder_path):
@@ -103,6 +170,7 @@ class RosbagParser:
             sys.exit(1)
 
     def parse_topics(self):
+        # TODO remove this obsolete method
         all_topics = []
         for file in os.listdir(self.folder_path):
             if file.endswith(".bag"):
@@ -116,6 +184,17 @@ class RosbagParser:
         self.topics_to_parse = recurrent_topics
 
     def parse_rosbags(self, topics=None, save_csv=True):
+        """
+        Given a list of topics, this method opens every rosbag in a folder path and saves the data for every
+        topic in the list.
+
+        Args:
+            topics (list): A list of topics to save the data for each .bag file.
+            save_csv (boolean): Optional variable for saving the dataframe in a .csv file.
+
+        Returns:
+            None.
+        """
         topics = topics or self.topics_to_parse
         for file in os.listdir(self.folder_path):
             if file.endswith(".bag"):
