@@ -1,10 +1,25 @@
 #!/usr/bin/env python3
 
-import rosbag
+"""This script parses BAG files in a path and saves them to a directory in CSV format.
+
+When run the script prompts the user to give desired topics to save or even ask for all the topics available.
+The script scans the given path for bag files and gets the topics for each rosbag file. 
+After determining the common topics among all rosbags, if a topic from the user is not found then it 
+outputs an error. Else, for each bag file in the given path, the script creates a CSV file in the rosbag directory
+with the name of each CSV file the same as the name of the corresponding rosbag.
+
+The script takes one argument:
+    - the path to the ROS bag file folder directory
+
+Usage: python3 rosbag_parser.py /path/to/rosbag/folder/path
+"""
+
+import logging
 import os
 import sys
+
 import pandas as pd
-import logging
+import rosbag
 
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -166,22 +181,10 @@ class RosbagParser:
             return common_topics
 
         except TopicNotFoundInBagError as e:
+            if file is None:
+                file = "any file"
             logging.error(f"{repr(e)}: Topics {different_topics} not found in {file}")
             sys.exit(1)
-
-    def parse_topics(self):
-        # TODO remove this obsolete method
-        all_topics = []
-        for file in os.listdir(self.folder_path):
-            if file.endswith(".bag"):
-                with rosbag.Bag(os.path.join(self.folder_path, file)) as bag:
-                    topics = list(bag.get_type_and_topic_info().topics.keys())
-                    all_topics.append(topics)
-
-        recurrent_topics = all_topics[0]
-        for topic_list in all_topics:
-            recurrent_topics = list(set(recurrent_topics).intersection(topic_list))
-        self.topics_to_parse = recurrent_topics
 
     def parse_rosbags(self, topics=None, save_csv=True):
         """
@@ -196,20 +199,50 @@ class RosbagParser:
             None.
         """
         topics = topics or self.topics_to_parse
-        for file in os.listdir(self.folder_path):
-            if file.endswith(".bag"):
+        for bag_file in os.scandir(self.folder_path):
+            if bag_file.name.endswith(".bag") and bag_file.is_file():
                 df = pd.DataFrame(columns=topics)
-                with rosbag.Bag(os.path.join(self.folder_path, file)) as bag:
-                    rows = []
-                    for topic, msg, t in bag.read_messages(topics=topics):
-                        row = {col_topic: None for col_topic in topics}
-                        row[topic] = msg
-                        row["Timestamp"] = t
-                        rows.append(row)
+                with rosbag.Bag(bag_file.path) as bag:
+                    rows = self._extract_rows_from_bag(bag, topics)
                     df = pd.concat([df, pd.DataFrame(rows)], ignore_index=True)
                 if save_csv:
-                    filename = file.split(".")[0]
-                    df.to_csv(os.path.join(self.folder_path, f"{filename}.csv"), index=True)
+                    filename = os.path.splitext(bag_file.name)[0]
+                    self._save_df_to_csv(df, filename)
+
+    def _extract_rows_from_bag(self, bag, topics):
+        """
+        Extracts rows of data from a ROS bag file.
+
+        Args:
+            bag (rosbag.Bag): The ROS bag file object to extract data from.
+            topics (list of str): The list of topics to extract messages from.
+
+        Returns:
+            list of dict: A list of dictionaries, where each dictionary corresponds to a row of data
+            extracted from the ROS bag file. The keys of each dictionary are the topic names and the
+            "Timestamp" key represents the message timestamp.
+        """
+        rows = []
+        for topic, msg, t in bag.read_messages(topics=topics):
+            row = {col_topic: None for col_topic in topics}
+            row[topic] = msg
+            row["Timestamp"] = t
+            rows.append(row)
+        return rows
+
+    def _save_df_to_csv(self, df, filename):
+        """
+        Saves a Pandas DataFrame to a CSV file.
+
+        Args:
+            df (pandas.DataFrame): The DataFrame to save to a CSV file.
+            filename (str): The name of the output CSV file, without the extension.
+
+        Returns:
+            None
+        """
+        csv_path = os.path.join(self.folder_path, f"{filename}.csv")
+        df.to_csv(csv_path, index=True)
 
 
 def main():
