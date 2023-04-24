@@ -21,6 +21,16 @@ import sys
 import pandas as pd
 import rosbag
 
+__author__ = "Paris Chatzithanos"
+__copyright__ = "Copyright 2007, The Cogent Project"
+__credits__ = "Paris Chatzithanos"
+__date__ = "2023/04/22"
+__license__ = "MIT"
+__version__ = "2.0.1"
+__maintainer__ = "Paris Chatzithanos"
+__email__ = "parischatz94@gmail.com"
+__status__ = "Development"
+
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
 
 
@@ -97,9 +107,8 @@ class RosbagParser:
         else:
             common_topics = self._find_common_topics_with_user_topic_list(all_topics, topic_list)
 
-        # TODO order the self.topics_to_parse list (second char of string)
-        # Alphabetically order list on second char (after "/")
-        self.topics_to_parse = common_topics
+        # Sorted common_topics alphabetically after the "/" (x[1]) of rostopics
+        self.topics_to_parse = sorted(common_topics, key=lambda x: x[1])
         return self.topics_to_parse
 
     def _get_all_topics(self):
