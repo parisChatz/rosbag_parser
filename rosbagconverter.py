@@ -3,6 +3,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 import os
 
+from gi.repository import GLib
 from gi.repository import Gtk as gtk
 
 import rosbag_parser as rp
@@ -21,6 +22,10 @@ class RosbagConverter:
         self.rp_instance = rp.RosbagParser(os.path.normpath(self.path))
 
     def on_button_get_topics_clicked(self, widget):
+        self.label.set_text("Loading topics, Please Wait!")
+        GLib.idle_add(self.load_topics)
+
+    def load_topics(self):
         try:
             self.rp_instance.get_topics(["all"])
 
